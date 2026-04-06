@@ -1,14 +1,14 @@
 # ==============================================================================
-# xrun: Build and Launch iOS Project on Simulator
+# xtest: Run XCTest on iOS Simulator
 # Usage:
-#   xrun <device_key> -> Builds for specific device (iph, pro, pm, etc.)
-#   xrun              -> Shows interactive device selection
+#   xtest <device_key> -> Runs tests for specific device (iph, pro, pm, etc.)
+#   xtest              -> Shows interactive device selection
 # ==============================================================================
-xrun() {
+xtest() {
   local cfg="$HOME/.xproj_path"
   local base_dir="$([[ -f "$cfg" ]] && <"$cfg")"
   local arg="$1" project scheme device_id d_name
-  
+
   # ANSI Colors
   local G=$'\e[32m' # Green
   local R=$'\e[31m' # Red
@@ -17,7 +17,7 @@ xrun() {
 
   # 1. Locate Project
   project=$(find . -maxdepth 2 \( -name "*.xcworkspace" -o -name "*.xcodeproj" \) ! -path "*/.*" 2>/dev/null | head -n1)
-  
+
   if [[ -z "$project" && -d "$base_dir" ]]; then
     local names=(); for p in "$base_dir"/*; do
       [[ -d "$p" ]] && ls "$p" | grep -qE "\.(xcodeproj|xcworkspace)$" && names+=("$(basename "$p")")
@@ -26,7 +26,7 @@ xrun() {
       echo "[i] Auto-selected: ${names[1]}"
       cd "$base_dir/${names[1]}"
     else
-      echo "${C}--- Build Project ---${N}"
+      echo "${C}--- Select Project ---${N}"
       local i=1; for n in "${names[@]}"; do echo "  $i) $n"; ((i++)); done
       echo -n "${C}Choice [1-${#names[@]}]:${N} "; read -r pc; cd "$base_dir/${names[$((pc))]}"
     fi
@@ -38,7 +38,7 @@ xrun() {
   if [[ -z "$arg" ]]; then
     echo "${C}--- Device ---${N}"
     local i=1; for k in "${keys[@]}"; do echo "  $i) $k"; ((i++)); done
-    echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$((dc-1))]}"
+echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$((dc))]}"
   fi
 
   # 3. Resolve Simulator
@@ -71,31 +71,43 @@ except: sys.exit(1)
   [[ -z "$info" ]] && { echo "${R}[!] No simulator found for '$arg'${N}"; return 1; }
   device_id="${info%|*}"; d_name="${info#*|}"
 
-  # 4. Build & Launch
+  # 4. Resolve Scheme
   local abs_p=$(realpath "$project")
   local flag="-project"; [[ "$abs_p" == *.xcworkspace ]] && flag="-workspace"
   scheme=$(xcodebuild -list $flag "$abs_p" 2>/dev/null | awk '/Schemes:/{f=1;next} f && NF{print $1;exit}')
 
+  # 5. Boot Simulator
   echo "[+] Target: $d_name"
   xcrun simctl boot "$device_id" 2>/dev/null
   pgrep -x "Simulator" >/dev/null || open -a Simulator
 
-  echo "[*] Building '$scheme'..."
-  if xcodebuild build $flag "$abs_p" -scheme "$scheme" -destination "platform=iOS Simulator,id=$device_id" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO 2>&1 | \
-    sed -e "s/.*BUILD SUCCEEDED.*/${G}** BUILD SUCCEEDED **${N}/gi" \
-        -e "s/.*BUILD FAILED.*/${R}** BUILD FAILED **${N}/gi" \
-        -e "s/error:/${R}error:${N}/gi" | grep -iE "succeeded|failed|error:"; then
-    
-    local sets=$(xcodebuild -showBuildSettings $flag "$abs_p" -scheme "$scheme" -sdk iphonesimulator 2>/dev/null)
-    local bid=$(echo "$sets" | awk '/PRODUCT_BUNDLE_IDENTIFIER =/{print $3}')
-    local bdir=$(echo "$sets" | awk -F' = ' '/CONFIGURATION_BUILD_DIR =/{print $2}' | xargs)
-    local apath=$(find "$bdir" -name "*.app" -maxdepth 1 2>/dev/null | head -n1)
+  # 6. Run Tests
+  echo "[*] Running tests for '$scheme'..."
+  echo "----------------------------------------"
 
-    echo "[+] Deploying..."
-    xcrun simctl install "$device_id" "$apath"
-    xcrun simctl launch "$device_id" "$bid"
-    echo "${G}[OK] Done.${N}"
+  local failed=0
+  xcodebuild test \
+    $flag "$abs_p" \
+    -scheme "$scheme" \
+    -destination "platform=iOS Simulator,id=$device_id" \
+    -sdk iphonesimulator \
+    CODE_SIGNING_ALLOWED=NO 2>&1 | \
+  awk -v G="$G" -v R="$R" -v C="$C" -v N="$N" '
+    /Test Suite .* started/     { print C $0 N }
+    /Test Case .* passed/       { print G "  ✓ " $0 N }
+    /Test Case .* failed/       { print R "  ✗ " $0 N; failed=1 }
+    /Test Suite .* passed/      { print G $0 N }
+    /Test Suite .* failed/      { print R $0 N }
+    /error:/                    { print R $0 N }
+    /BUILD SUCCEEDED/           { print G "** BUILD SUCCEEDED **" N }
+    /BUILD FAILED/              { print R "** BUILD FAILED **" N }
+  '
+
+  echo "----------------------------------------"
+  if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
+    echo "${G}[OK] All tests passed.${N}"
   else
-    echo "${R}[!] Build stopped due to errors.${N}"
+    echo "${R}[!] Some tests failed.${N}"
+    return 1
   fi
 }
