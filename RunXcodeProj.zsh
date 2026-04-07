@@ -1,3 +1,4 @@
+#!/bin/zsh
 # ==============================================================================
 # xrun: Build and Launch iOS Project on Simulator
 # Usage:
