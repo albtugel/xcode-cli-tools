@@ -1,4 +1,5 @@
 #!/bin/zsh
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # ==============================================================================
 # xrun: Build and Launch iOS Project on Simulator
 # Usage:
