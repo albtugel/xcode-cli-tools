@@ -32,7 +32,7 @@ curl -fsSL https://raw.githubusercontent.com/albtugel/xcode-cli-tools/main/insta
 ```zsh
     echo "source ~/xcode-cli-tools/OpenXcodeProj.zsh" >> ~/.zshrc
     echo "source ~/xcode-cli-tools/RunXcodeProj.zsh" >> ~/.zshrc
-    echo "source ~/xcode-cli-tools/xtest.zsh" >> ~/.zshrc
+    echo "source ~/xcode-cli-tools/TestXcodeProj.zsh" >> ~/.zshrc
 ```
 
 3. **Reload your terminal**:
