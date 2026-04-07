@@ -1,3 +1,4 @@
+#!/bin/zsh
 # ==============================================================================
 # xproj: Quick Open Xcode Projects from a Base Directory
 # Usage:
