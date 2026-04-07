@@ -1,4 +1,5 @@
 #!/bin/zsh
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # ==============================================================================
 # xtest: Run XCTest on iOS Simulator
 # Usage:
