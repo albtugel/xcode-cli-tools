@@ -1,6 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Zsh](https://img.shields.io/badge/shell-zsh-blue.svg)](https://www.zsh.org/)
-[![Repo Size](https://img.shields.io/github/repo-size/albtugel/xcode-cli-tools)](https://github.com/albtugel/xcode-cli-tools)
 [![Last Commit](https://img.shields.io/github/last-commit/albtugel/xcode-cli-tools)](https://github.com/albtugel/xcode-cli-tools)
 [![Issues](https://img.shields.io/github/issues/albtugel/xcode-cli-tools)](https://github.com/albtugel/xcode-cli-tools/issues)
 
