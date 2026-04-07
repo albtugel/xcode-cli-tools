@@ -10,10 +10,10 @@ xtest() {
   local arg="$1" project scheme device_id d_name
 
   # ANSI Colors
-  local G=$'\e[32m' # Green
-  local R=$'\e[31m' # Red
-  local C=$'\e[36m' # Cyan
-  local N=$'\e[0m'  # Reset
+  local G=$'\e[32m'
+  local R=$'\e[31m'
+  local C=$'\e[36m'
+  local N=$'\e[0m'
 
   # 1. Locate Project
   project=$(find . -maxdepth 2 \( -name "*.xcworkspace" -o -name "*.xcodeproj" \) ! -path "*/.*" 2>/dev/null | head -n1)
@@ -34,11 +34,11 @@ xtest() {
   fi
 
   # 2. Select Device Type
-  local keys=(iph pro pm plus se ipadpro air ipad mini)
+  local keys=(iph pro pm plus se air 16e ipadpro ipadair ipad mini)
   if [[ -z "$arg" ]]; then
     echo "${C}--- Device ---${N}"
     local i=1; for k in "${keys[@]}"; do echo "  $i) $k"; ((i++)); done
-echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$((dc))]}"
+    echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$dc]}"
   fi
 
   # 3. Resolve Simulator
@@ -53,16 +53,19 @@ try:
         for d in devs:
             if not d.get('isAvailable'): continue
             n = d['name'].lower()
-            if (target=='iph' and 'iphone' in n and not any(x in n for x in ['pro','max','plus','se'])) or \
+            match = re.search(r'\d+', d['name'])
+            v = int(match.group()) if match else 0
+            if (target=='iph' and 'iphone' in n and not any(x in n for x in ['pro','max','plus','se','air','16e'])) or \
                (target=='pro' and 'iphone' in n and 'pro' in n and 'max' not in n) or \
                (target=='pm' and 'pro max' in n) or \
-               (target=='plus' and 'plus' in n) or \
+               (target=='plus' and 'iphone' in n and 'plus' in n) or \
                (target=='se' and 'se' in n) or \
+               (target=='air' and 'iphone air' in n) or \
+               (target=='16e' and '16e' in n) or \
                (target=='ipadpro' and 'ipad pro' in n) or \
-               (target=='air' and 'ipad air' in n) or \
+               (target=='ipadair' and 'ipad air' in n) or \
                (target=='ipad' and 'ipad' in n and not any(x in n for x in ['pro','air','mini'])) or \
                (target=='mini' and 'ipad mini' in n):
-                v = int(re.search(r'\d+', d['name']).group()) if re.search(r'\d+', d['name']) else 0
                 cands.append((v, d['udid'], d['name']))
     cands.sort(key=lambda x: x[0], reverse=True)
     if cands: print(f'{cands[0][1]}|{cands[0][2]}')
@@ -85,7 +88,6 @@ except: sys.exit(1)
   echo "[*] Running tests for '$scheme'..."
   echo "----------------------------------------"
 
-  local failed=0
   xcodebuild test \
     $flag "$abs_p" \
     -scheme "$scheme" \
@@ -95,19 +97,6 @@ except: sys.exit(1)
   awk -v G="$G" -v R="$R" -v C="$C" -v N="$N" '
     /Test Suite .* started/     { print C $0 N }
     /Test Case .* passed/       { print G "  ✓ " $0 N }
-    /Test Case .* failed/       { print R "  ✗ " $0 N; failed=1 }
+    /Test Case .* failed/       { print R "  ✗ " $0 N }
     /Test Suite .* passed/      { print G $0 N }
-    /Test Suite .* failed/      { print R $0 N }
-    /error:/                    { print R $0 N }
-    /BUILD SUCCEEDED/           { print G "** BUILD SUCCEEDED **" N }
-    /BUILD FAILED/              { print R "** BUILD FAILED **" N }
-  '
-
-  echo "----------------------------------------"
-  if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
-    echo "${G}[OK] All tests passed.${N}"
-  else
-    echo "${R}[!] Some tests failed.${N}"
-    return 1
-  fi
-}
+    /Test Suite .* failed/      { print R $0 N

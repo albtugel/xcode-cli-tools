@@ -34,11 +34,11 @@ xrun() {
   fi
 
   # 2. Select Device Type
-  local keys=(iph pro pm plus se ipadpro air ipad mini)
+  local keys=(iph pro pm plus se air 16e ipadpro ipadair ipad mini)
   if [[ -z "$arg" ]]; then
     echo "${C}--- Device ---${N}"
     local i=1; for k in "${keys[@]}"; do echo "  $i) $k"; ((i++)); done
-    echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$((dc-1))]}"
+    echo -n "${C}Choice [1-${#keys[@]}]:${N} "; read -r dc; arg="${keys[$dc]}"
   fi
 
   # 3. Resolve Simulator
@@ -53,16 +53,19 @@ try:
         for d in devs:
             if not d.get('isAvailable'): continue
             n = d['name'].lower()
-            if (target=='iph' and 'iphone' in n and not any(x in n for x in ['pro','max','plus','se'])) or \
+            match = re.search(r'\d+', d['name'])
+            v = int(match.group()) if match else 0
+            if (target=='iph' and 'iphone' in n and not any(x in n for x in ['pro','max','plus','se','air','16e'])) or \
                (target=='pro' and 'iphone' in n and 'pro' in n and 'max' not in n) or \
                (target=='pm' and 'pro max' in n) or \
-               (target=='plus' and 'plus' in n) or \
+               (target=='plus' and 'iphone' in n and 'plus' in n) or \
                (target=='se' and 'se' in n) or \
+               (target=='air' and 'iphone air' in n) or \
+               (target=='16e' and '16e' in n) or \
                (target=='ipadpro' and 'ipad pro' in n) or \
-               (target=='air' and 'ipad air' in n) or \
+               (target=='ipadair' and 'ipad air' in n) or \
                (target=='ipad' and 'ipad' in n and not any(x in n for x in ['pro','air','mini'])) or \
                (target=='mini' and 'ipad mini' in n):
-                v = int(re.search(r'\d+', d['name']).group()) if re.search(r'\d+', d['name']) else 0
                 cands.append((v, d['udid'], d['name']))
     cands.sort(key=lambda x: x[0], reverse=True)
     if cands: print(f'{cands[0][1]}|{cands[0][2]}')
