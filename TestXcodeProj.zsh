@@ -8,7 +8,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # ==============================================================================
 xtest() {
   local cfg="$HOME/.xproj_path"
-  local base_dir="$([[ -f "$cfg" ]] && <"$cfg")"
+  local base_dir="$([[ -f "$cfg" ]] && cat "$cfg")"
   local arg="$1" project scheme device_id d_name
 
   # ANSI Colors
@@ -97,8 +97,17 @@ except: sys.exit(1)
     -sdk iphonesimulator \
     CODE_SIGNING_ALLOWED=NO 2>&1 | \
   awk -v G="$G" -v R="$R" -v C="$C" -v N="$N" '
-    /Test Suite .* started/     { print C $0 N }
-    /Test Case .* passed/       { print G "  ✓ " $0 N }
-    /Test Case .* failed/       { print R "  ✗ " $0 N }
-    /Test Suite .* passed/      { print G $0 N }
-    /Test Suite .* failed/      { print R $0 N
+    /Test Suite .* started/  { print C $0 N }
+    /Test Case .* passed/    { print G "  ✓ " $0 N }
+    /Test Case .* failed/    { print R "  ✗ " $0 N }
+    /Test Suite .* passed/   { print G $0 N }
+    /Test Suite .* failed/   { print R $0 N }
+    /BUILD SUCCEEDED/        { print G $0 N }
+    /BUILD FAILED/           { print R $0 N }
+  '
+
+  echo "----------------------------------------"
+  echo "${G}[OK] Done.${N}"
+}
+
+xtest "$@"

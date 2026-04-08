@@ -8,14 +8,14 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # ==============================================================================
 xrun() {
   local cfg="$HOME/.xproj_path"
-  local base_dir="$([[ -f "$cfg" ]] && <"$cfg")"
+  local base_dir="$([[ -f "$cfg" ]] && cat "$cfg")"
   local arg="$1" project scheme device_id d_name
   
   # ANSI Colors
-  local G=$'\e[32m' # Green
-  local R=$'\e[31m' # Red
-  local C=$'\e[36m' # Cyan
-  local N=$'\e[0m'  # Reset
+  local G=$'\e[32m'
+  local R=$'\e[31m'
+  local C=$'\e[36m'
+  local N=$'\e[0m'
 
   # 1. Locate Project
   project=$(find . -maxdepth 2 \( -name "*.xcworkspace" -o -name "*.xcodeproj" \) ! -path "*/.*" 2>/dev/null | head -n1)
@@ -104,3 +104,5 @@ except: sys.exit(1)
     echo "${R}[!] Build stopped due to errors.${N}"
   fi
 }
+
+xrun "$@"
