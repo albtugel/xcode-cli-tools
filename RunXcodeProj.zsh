@@ -5,34 +5,24 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # Usage:
 #   xrun <device_key> -> Builds for specific device (iph, pro, pm, etc.)
 #   xrun              -> Shows interactive device selection
+# Run from the directory containing your .xcodeproj or .xcworkspace
 # ==============================================================================
 xrun() {
-  local cfg="$HOME/.xproj_path"
-  local base_dir="$([[ -f "$cfg" ]] && cat "$cfg")"
   local arg="$1" project scheme device_id d_name
-  
+
   # ANSI Colors
   local G=$'\e[32m'
   local R=$'\e[31m'
   local C=$'\e[36m'
   local N=$'\e[0m'
 
-  # 1. Locate Project
+  # 1. Locate Project in current directory
   project=$(find . -maxdepth 2 \( -name "*.xcworkspace" -o -name "*.xcodeproj" \) ! -path "*/.*" 2>/dev/null | head -n1)
-  
-  if [[ -z "$project" && -d "$base_dir" ]]; then
-    local names=(); for p in "$base_dir"/*; do
-      [[ -d "$p" ]] && ls "$p" | grep -qE "\.(xcodeproj|xcworkspace)$" && names+=("$(basename "$p")")
-    done
-    if [[ ${#names[@]} -eq 1 ]]; then
-      echo "[i] Auto-selected: ${names[1]}"
-      cd "$base_dir/${names[1]}"
-    else
-      echo "${C}--- Build Project ---${N}"
-      local i=1; for n in "${names[@]}"; do echo "  $i) $n"; ((i++)); done
-      echo -n "${C}Choice [1-${#names[@]}]:${N} "; read -r pc; cd "$base_dir/${names[$((pc))]}"
-    fi
-    project=$(find . -maxdepth 2 \( -name "*.xcworkspace" -o -name "*.xcodeproj" \) ! -path "*/.*" 2>/dev/null | head -n1)
+
+  if [[ -z "$project" ]]; then
+    echo "${R}[!] No Xcode project found in current directory.${N}"
+    echo "${C}[i] cd into your project folder first, then run xrun.${N}"
+    return 1
   fi
 
   # 2. Select Device Type
@@ -81,6 +71,7 @@ except: sys.exit(1)
   local flag="-project"; [[ "$abs_p" == *.xcworkspace ]] && flag="-workspace"
   scheme=$(xcodebuild -list $flag "$abs_p" 2>/dev/null | awk '/Schemes:/{f=1;next} f && NF{print $1;exit}')
 
+  echo "[+] Project: $(basename "$abs_p")"
   echo "[+] Target: $d_name"
   xcrun simctl boot "$device_id" 2>/dev/null
   pgrep -x "Simulator" >/dev/null || open -a Simulator
@@ -90,7 +81,7 @@ except: sys.exit(1)
     sed -e "s/.*BUILD SUCCEEDED.*/${G}** BUILD SUCCEEDED **${N}/gi" \
         -e "s/.*BUILD FAILED.*/${R}** BUILD FAILED **${N}/gi" \
         -e "s/error:/${R}error:${N}/gi" | grep -iE "succeeded|failed|error:"; then
-    
+
     local sets=$(xcodebuild -showBuildSettings $flag "$abs_p" -scheme "$scheme" -sdk iphonesimulator 2>/dev/null)
     local bid=$(echo "$sets" | awk '/PRODUCT_BUNDLE_IDENTIFIER =/{print $3}')
     local bdir=$(echo "$sets" | awk -F' = ' '/CONFIGURATION_BUILD_DIR =/{print $2}' | xargs)
