@@ -1,4 +1,5 @@
 #!/bin/zsh
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # ==============================================================================
 # xproj: Quick Open Xcode Projects from a Base Directory
 # Usage:
@@ -8,11 +9,11 @@
 xproj() {
   local cfg="$HOME/.xproj_path"
   local base_dir selected xfile
-  local C=$'\e[36m' # Cyan
-  local N=$'\e[0m'  # Reset
+  local C=$'\e[36m'
+  local N=$'\e[0m'
 
   # Load or setup base directory
-  [[ -f "$cfg" ]] && base_dir=$(<"$cfg")
+  [[ -f "$cfg" ]] && base_dir=$(cat "$cfg")
   if [[ ! -d "$base_dir" ]]; then
     echo -n "${C}[?] Enter Projects Path:${N} "; read -r upath
     base_dir="${upath/#\~/$HOME}"
@@ -42,3 +43,5 @@ xproj() {
   open "$xfile"
   echo "[OK] Xcode is launching."
 }
+
+xproj "$@"
